@@ -7,7 +7,7 @@ namespace BloodHoundIngestor
 {
     class Globals
     {
-        private Boolean Verbose;
+        public Boolean Verbose { get; set; }
         private static Globals instance;
 
         public static Globals Instance()
@@ -22,6 +22,13 @@ namespace BloodHoundIngestor
         public Globals()
         {
             Verbose = false;
+        }
+
+        public void WriteVerbose(string Message)
+        {
+            if (Verbose){
+                Console.WriteLine(Message);
+            }
         }
 
     }

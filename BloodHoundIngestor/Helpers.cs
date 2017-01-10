@@ -12,6 +12,7 @@ namespace BloodHoundIngestor
         private static Helpers instance;
 
         private Dictionary<String, Domain> DomainResolveCache;
+        private Globals Globals;
 
         public static Helpers Instance
         {
@@ -28,6 +29,7 @@ namespace BloodHoundIngestor
         public Helpers()
         {
             DomainResolveCache = new Dictionary<string, Domain>();
+            Globals = Globals.Instance();
         }
 
         public DirectorySearcher GetDomainSearcher(string Domain = null, string SearchBase = null)
@@ -52,8 +54,16 @@ namespace BloodHoundIngestor
                 string DomainDN = DomainName.Replace(".", ",DC=");
                 SearchString += "DC=" + DomainDN;
             }
+            
+            Globals.WriteVerbose(String.Format("[GetDomainSearcher] Search String: {0}", SearchString));
 
-            return null;
+            DirectorySearcher Searcher = new DirectorySearcher(SearchString);
+            Searcher.PageSize = 200;
+            Searcher.SearchScope = SearchScope.Subtree;
+            Searcher.CacheResults = false;
+            Searcher.ReferralChasing = ReferralChasingOption.All;
+
+            return Searcher;
         }
 
         public Domain GetDomain(string Domain = null)
