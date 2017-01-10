@@ -10,13 +10,16 @@ namespace BloodHoundIngestor
         public Boolean Verbose { get; set; }
         private static Globals instance;
 
-        public static Globals Instance()
+        public static Globals Instance
         {
-            if (instance == null)
+            get
             {
-                instance = new Globals();
+                if (instance == null)
+                {
+                    instance = new Globals();
+                }
+                return instance;
             }
-            return instance;
         }
 
         public Globals()

@@ -29,7 +29,7 @@ namespace BloodHoundIngestor
         public Helpers()
         {
             DomainResolveCache = new Dictionary<string, Domain>();
-            Globals = Globals.Instance();
+            Globals = Globals.Instance;
         }
 
         public DirectorySearcher GetDomainSearcher(string Domain = null, string SearchBase = null)
