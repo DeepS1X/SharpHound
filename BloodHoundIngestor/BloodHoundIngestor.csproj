@@ -42,7 +42,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BloodHoundIngestor.cs" />
+    <Compile Include="DomainTrust.cs" />
     <Compile Include="DomainTrustMapping.cs" />
+    <Compile Include="Globals.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Queue.cs" />

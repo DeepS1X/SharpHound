@@ -9,6 +9,7 @@ namespace BloodHoundIngestor
     {
         static void Main(string[] args)
         {
+            DomainTrustMapping TrustMapper = new DomainTrustMapping();
         }
     }
 }

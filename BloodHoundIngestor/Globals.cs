@@ -7,7 +7,7 @@ namespace BloodHoundIngestor
 {
     class Globals
     {
-        public Boolean Verbose { get; set; }
+        public bool Verbose { get; set; }
         private static Globals instance;
 
         public static Globals Instance
