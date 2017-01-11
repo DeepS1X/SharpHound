@@ -10,6 +10,7 @@ namespace BloodHoundIngestor
         static void Main(string[] args)
         {
             DomainTrustMapping TrustMapper = new DomainTrustMapping();
+            Environment.Exit(0);
         }
     }
 }
