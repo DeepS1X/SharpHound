@@ -10,18 +10,18 @@ namespace BloodHoundIngestor
     class DomainTrustMapping
     {
         private Helpers Helpers;
-        private Globals Globals;
         private List<string> SeenDomains;
         private Stack<Domain> Tracker;
         private List<DomainTrust> EnumeratedTrusts;
+        private Options options;
 
-        public DomainTrustMapping()
+        public DomainTrustMapping(Options cli)
         {
             Helpers = Helpers.Instance;
-            Globals = Globals.Instance;
             SeenDomains = new List<string>();
             Tracker = new Stack<Domain>();
             EnumeratedTrusts = new List<DomainTrust>();
+            options = cli;
             GetDomainTrusts();
 
             using (StreamWriter writer = new StreamWriter("trusts.csv"))
@@ -58,7 +58,7 @@ namespace BloodHoundIngestor
                 {
                     return;
                 }
-                Globals.WriteVerbose("Enumerating trusts for " + CurrentDomain.Name);
+                options.WriteVerbose("Enumerating trusts for " + CurrentDomain.Name);
                 SeenDomains.Add(CurrentDomain.Name);
                 TrustRelationshipInformationCollection Trusts =  GetNetDomainTrust(CurrentDomain);
                 foreach (TrustRelationshipInformation Trust in Trusts)

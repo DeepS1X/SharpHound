@@ -12,24 +12,25 @@ namespace BloodHoundIngestor
         private static Helpers instance;
 
         private Dictionary<String, Domain> DomainResolveCache;
-        private Globals Globals;
+        private Options options;
+
+        public static void CreateInstance(Options cli)
+        {
+            instance = new Helpers(cli);
+        }
 
         public static Helpers Instance
         {
             get
             {
-                if (instance == null)
-                {
-                    instance = new Helpers();
-                }
                 return instance;
             }
         }
 
-        public Helpers()
+        public Helpers(Options cli)
         {
             DomainResolveCache = new Dictionary<string, Domain>();
-            Globals = Globals.Instance;
+            options = cli;
         }
 
         public DirectorySearcher GetDomainSearcher(string Domain = null, string SearchBase = null)
@@ -55,7 +56,7 @@ namespace BloodHoundIngestor
                 SearchString += "DC=" + DomainDN;
             }
             
-            Globals.WriteVerbose(String.Format("[GetDomainSearcher] Search String: {0}", SearchString));
+            options.WriteVerbose(String.Format("[GetDomainSearcher] Search String: {0}", SearchString));
 
             DirectorySearcher Searcher = new DirectorySearcher(SearchString);
             Searcher.PageSize = 200;
