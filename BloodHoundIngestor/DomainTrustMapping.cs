@@ -24,7 +24,9 @@ namespace BloodHoundIngestor
             options = cli;
             GetDomainTrusts();
 
-            using (StreamWriter writer = new StreamWriter("trusts.csv"))
+            string Filename = options.CSVPrefix.Equals("") ? "trusts.csv" : options.CSVPrefix + "_trusts.csv";
+
+            using (StreamWriter writer = new StreamWriter(Path.Combine(options.CSVFolder, Filename)))
             {
                 foreach (DomainTrust d in EnumeratedTrusts)
                 {
