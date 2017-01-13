@@ -50,20 +50,34 @@ namespace BloodHoundIngestor
 
                 foreach (SearchResult result in DomainSearcher.FindAll())
                 {
-                    if (counter % 1000 == 0)
+                    if (counter % 1000 == 0 && counter > 0)
                     {
                         options.WriteVerbose("Group objects enumerated: " + counter.ToString());
                         //writer.Flush();
                     }
-
+                    string MemberDomain = null;
                     string DistinguishedName = result.Properties["distinguishedname"][0].ToString();
 
-                    if (DistinguishedName.Contains("ForeignSecurityPrincipals") || DistinguishedName.Contains("S-1-5-21"))
+                    if (DistinguishedName.Contains("ForeignSecurityPrincipals") && DistinguishedName.Contains("S-1-5-21"))
                     {
-                        string Translated = Helpers.ConvertSID(result.Properties["cn"][0].ToString());
-                        string Final = Helpers.ConvertADName(@"DOMAINA\Administrator", Helpers.ADSTypes.ADS_NAME_TYPE_NT4, Helpers.ADSTypes.ADS_NAME_TYPE_DN);
-                        Console.WriteLine(Final);
+                        try
+                        {
+                            string Translated = Helpers.ConvertSID(result.Properties["cn"][0].ToString());
+                            string Final = Helpers.ConvertADName(Translated, Helpers.ADSTypes.ADS_NAME_TYPE_NT4, Helpers.ADSTypes.ADS_NAME_TYPE_DN);
+                            MemberDomain = Final.Split('/')[0];
+                        }
+                        catch
+                        {
+                            options.WriteVerbose("Error converting " + DistinguishedName);
+                        }
+
+                    }else
+                    {
+                        MemberDomain = DistinguishedName.Substring(DistinguishedName.IndexOf("DC=")).Replace("DC=", "").Replace(",", ".");
                     }
+
+                    counter++;
+                    
                 }
             }
         }

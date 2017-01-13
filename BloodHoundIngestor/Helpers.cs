@@ -15,6 +15,9 @@ namespace BloodHoundIngestor
 
         private Dictionary<String, Domain> DomainResolveCache;
         private Options options;
+        private Type TranslateName;
+        object TranslateInstance;
+
         public enum  ADSTypes{
             ADS_NAME_TYPE_DN = 1,
             ADS_NAME_TYPE_CANONICAL = 2,
@@ -47,6 +50,13 @@ namespace BloodHoundIngestor
         {
             DomainResolveCache = new Dictionary<string, Domain>();
             options = cli;
+            TranslateName = Type.GetTypeFromProgID("NameTranslate");
+            TranslateInstance = Activator.CreateInstance(TranslateName);
+
+            object[] args = new object[2];
+            args[0] = 3;
+            args[1] = "";
+            TranslateName.InvokeMember("Init", BindingFlags.InvokeMethod, null, TranslateInstance, args);
         }
 
         public DirectorySearcher GetDomainSearcher(string Domain = null, string SearchBase = null)
@@ -74,7 +84,7 @@ namespace BloodHoundIngestor
             
             options.WriteVerbose(String.Format("[GetDomainSearcher] Search String: {0}", SearchString));
 
-            DirectorySearcher Searcher = new DirectorySearcher(SearchString);
+            DirectorySearcher Searcher = new DirectorySearcher(new DirectoryEntry(SearchString));
             Searcher.PageSize = 200;
             Searcher.SearchScope = SearchScope.Subtree;
             Searcher.CacheResults = false;
@@ -358,28 +368,25 @@ namespace BloodHoundIngestor
                     break;
             }
 
-
-            Type TranslateName = Type.GetTypeFromProgID("NameTranslate");
-            object obj = Activator.CreateInstance(TranslateName);
-
-            object[] args = new object[2];
-            args[0] = 3;
-            args[1] = "";
-            TranslateName.InvokeMember("Init", BindingFlags.InvokeMethod, null, obj, args);
-
             //PropertyInfo Referral = TranslateName.GetProperty("ChaseReferrals");
             //Referral.SetValue(obj, 0x60, null);
 
-            args = new object[2];
+            object[] args = new object[2];
             args[0] = (int)InputType;
             args[1] = ObjectName;
-            TranslateName.InvokeMember("Set", BindingFlags.InvokeMethod, null, obj, args);
+            TranslateName.InvokeMember("Set", BindingFlags.InvokeMethod, null, TranslateInstance, args);
 
             args = new object[1];
             args[0] = (int)OutputType;
-            string Result = (string) TranslateName.InvokeMember("Get", BindingFlags.InvokeMethod, null, obj, args);
-
-            return Result;
+            try
+            {
+                string Result = (string)TranslateName.InvokeMember("Get", BindingFlags.InvokeMethod, null, TranslateInstance, args);
+                return Result;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
