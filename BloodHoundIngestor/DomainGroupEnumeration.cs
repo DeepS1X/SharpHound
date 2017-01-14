@@ -12,12 +12,12 @@ namespace BloodHoundIngestor
         private Helpers Helpers;
         private Options options;
         private Dictionary<string, string> GroupDNMappings;
+        private Dictionary<string, string> PrimaryGroups;
 
         public DomainGroupEnumeration(Options cli)
         {
             Helpers = Helpers.Instance;
             options = cli;
-            GroupDNMappings = new Dictionary<string, string>();
             EnumerateGroupMembership();
         }
 
@@ -42,6 +42,10 @@ namespace BloodHoundIngestor
             foreach (string DomainName in Domains)
             {
                 options.WriteVerbose("Starting Group Membership Enumeration for " + DomainName);
+                GroupDNMappings = new Dictionary<string, string>();
+                PrimaryGroups = new Dictionary<string, string>();
+
+
 
                 DirectorySearcher DomainSearcher = Helpers.GetDomainSearcher(DomainName);
                 DomainSearcher.Filter = "(memberof=*)";
@@ -57,12 +61,14 @@ namespace BloodHoundIngestor
                     }
                     string MemberDomain = null;
                     string DistinguishedName = result.Properties["distinguishedname"][0].ToString();
+                    string ObjectType = null;
+                    string MemberName = null;
 
                     if (DistinguishedName.Contains("ForeignSecurityPrincipals") && DistinguishedName.Contains("S-1-5-21"))
                     {
                         try
                         {
-                            string Translated = Helpers.ConvertSID(result.Properties["cn"][0].ToString());
+                            string Translated = Helpers.ConvertSIDToName(result.Properties["cn"][0].ToString());
                             string Final = Helpers.ConvertADName(Translated, Helpers.ADSTypes.ADS_NAME_TYPE_NT4, Helpers.ADSTypes.ADS_NAME_TYPE_DN);
                             MemberDomain = Final.Split('/')[0];
                         }
@@ -71,13 +77,78 @@ namespace BloodHoundIngestor
                             options.WriteVerbose("Error converting " + DistinguishedName);
                         }
 
-                    }else
+                    } else
                     {
                         MemberDomain = DistinguishedName.Substring(DistinguishedName.IndexOf("DC=")).Replace("DC=", "").Replace(",", ".");
                     }
 
                     counter++;
-                    
+
+                    string SAMAccountType;
+                    string SAMAccountName;
+                    string AccountName = null;
+                    ResultPropertyValueCollection SAT = result.Properties["samaccounttype"];
+                    if (SAT.Count == 0)
+                    {
+                        options.WriteVerbose("Unknown Account Type");
+                        continue;
+                    }else
+                    {
+                        SAMAccountType = SAT[0].ToString();
+                    }
+                    string[] groups = new string[] { "268435456", "268435457", "536870912", "536870913"};
+                    string[] computers = new string[] { "805306369" };
+                    string[] users = new string[] { "805306368" };
+                    if (groups.Contains(SAMAccountType))
+                    {
+                        ObjectType = "group";
+                        ResultPropertyValueCollection SAN = result.Properties["samaccountname"];
+                        if (SAN.Count > 0)
+                        {
+                            SAMAccountName = SAN[0].ToString();
+                        }else
+                        {
+                            SAMAccountName = Helpers.ConvertSIDToName(result.Properties["cn"][0].ToString());
+                            if (SAMAccountName == null)
+                            {
+                                SAMAccountName = result.Properties["cn"][0].ToString();
+                            }
+                        }
+                        AccountName = String.Format("{0}@{1}", SAMAccountName, MemberDomain);
+                    }else if (computers.Contains(SAMAccountType))
+                    {
+                        ObjectType = "computer";
+                        AccountName = result.Properties["dnshostname"][0].ToString();
+                    }else if (users.Contains(SAMAccountType))
+                    {
+                        ObjectType = "user";
+                        ResultPropertyValueCollection SAN = result.Properties["samaccountname"];
+                        if (SAN.Count > 0)
+                        {
+                            SAMAccountName = SAN[0].ToString();
+                        }
+                        else
+                        {
+                            SAMAccountName = Helpers.ConvertSIDToName(result.Properties["cn"][0].ToString());
+                            if (SAMAccountName == null)
+                            {
+                                SAMAccountName = result.Properties["cn"][0].ToString();
+                            }
+                        }
+                        AccountName = String.Format("{0}@{1}", SAMAccountName, MemberDomain);
+                    }
+
+                    if (AccountName.StartsWith("@") || AccountName == null)
+                    {
+                        continue;
+                    }
+
+                    ResultPropertyValueCollection PGI = result.Properties["primarygroupid"];
+
+                    if (PGI.Count > 0)
+                    {
+
+                    }
                 }
             }
         }

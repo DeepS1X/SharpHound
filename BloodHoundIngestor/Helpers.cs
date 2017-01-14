@@ -139,7 +139,7 @@ namespace BloodHoundIngestor
             return DomainObject;
         }
 
-        public string ConvertSID(string cn)
+        public string ConvertSIDToName(string cn)
         {
             string TrimmedCN = cn.Trim('*');
             string result;
