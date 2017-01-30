@@ -344,6 +344,21 @@ namespace BloodHoundIngestor
             return result;
         }
 
+        public string GetDomainSid(string DomainName)
+        {
+            byte[] domainSid;
+            var dContext = new DirectoryContext(DirectoryContextType.Domain, DomainName);
+            using (var domain = Domain.GetDomain(dContext))
+            {
+                using (var dEntry = domain.GetDirectoryEntry())
+                {
+                    domainSid = (byte[])dEntry.Properties["objectSid"].Value;
+                    var sid = new SecurityIdentifier(domainSid, 0);
+                    return sid.ToString();
+                }
+            }
+        }
+
         public string ConvertADName(string ObjectName, ADSTypes InputType, ADSTypes OutputType)
         {
             string Domain;

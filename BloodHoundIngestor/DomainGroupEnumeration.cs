@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.DirectoryServices;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace BloodHoundIngestor
 {
@@ -44,8 +42,7 @@ namespace BloodHoundIngestor
                 options.WriteVerbose("Starting Group Membership Enumeration for " + DomainName);
                 GroupDNMappings = new Dictionary<string, string>();
                 PrimaryGroups = new Dictionary<string, string>();
-
-
+                string DomainSid = Helpers.GetDomainSid(DomainName);
 
                 DirectorySearcher DomainSearcher = Helpers.GetDomainSearcher(DomainName);
                 DomainSearcher.Filter = "(memberof=*)";
@@ -84,8 +81,8 @@ namespace BloodHoundIngestor
 
                     counter++;
 
-                    string SAMAccountType;
-                    string SAMAccountName;
+                    string SAMAccountType = null;
+                    string SAMAccountName = null;
                     string AccountName = null;
                     ResultPropertyValueCollection SAT = result.Properties["samaccounttype"];
                     if (SAT.Count == 0)
@@ -144,10 +141,29 @@ namespace BloodHoundIngestor
                     }
 
                     ResultPropertyValueCollection PGI = result.Properties["primarygroupid"];
+                    string PrimaryGroup = null;
 
                     if (PGI.Count > 0)
                     {
-
+                        string PrimaryGroupSID = DomainSid + "-" + PGI[0].ToString();
+                        string PrimaryGroupName = null;
+                        if (PrimaryGroups.ContainsKey(PrimaryGroupSID))
+                        {
+                            PrimaryGroupName = PrimaryGroups[PrimaryGroupSID];
+                        }else
+                        {
+                            string raw = Helpers.ConvertSIDToName(PrimaryGroupSID);
+                            if (!raw.StartsWith("S-1-"))
+                            {
+                                PrimaryGroupName = raw.Split('\\').Last();
+                                PrimaryGroups[PrimaryGroupSID] = PrimaryGroupName;
+                            }
+                        }
+                        if (PrimaryGroupName != null)
+                        {
+                            PrimaryGroup = PrimaryGroupName + "@" + DomainName;
+                        }
+                        Console.WriteLine(PrimaryGroup);
                     }
                 }
             }
