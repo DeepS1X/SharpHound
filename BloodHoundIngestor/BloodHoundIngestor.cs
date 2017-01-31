@@ -84,7 +84,8 @@ namespace BloodHoundIngestor
                     }
                 }
                 //DomainTrustMapping TrustMapper = new DomainTrustMapping(options);
-                DomainGroupEnumeration GroupEnumeration = new DomainGroupEnumeration(options);
+                //DomainGroupEnumeration GroupEnumeration = new DomainGroupEnumeration(options);
+                LocalAdminEnumeration AdminEnumeration = new LocalAdminEnumeration(options);
             }
             
             Environment.Exit(0);
