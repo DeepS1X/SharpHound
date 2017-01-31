@@ -162,8 +162,36 @@ namespace BloodHoundIngestor
                         if (PrimaryGroupName != null)
                         {
                             PrimaryGroup = PrimaryGroupName + "@" + DomainName;
+                            Console.WriteLine(PrimaryGroup + "," + AccountName + "," + ObjectType);
                         }
-                        Console.WriteLine(PrimaryGroup);
+                        
+                    }
+
+                    ResultPropertyValueCollection MemberOf = result.Properties["memberof"];
+                    if (MemberOf.Count > 0)
+                    {
+                        foreach (var dn in MemberOf)
+                        {
+                            string DNString = dn.ToString();
+                            string GroupDomain = DNString.Substring(DNString.IndexOf("DC=")).Replace("DC=", "").Replace(",", ".");
+                            string GroupName = null;
+                            if (GroupDNMappings.ContainsKey(DNString))
+                            {
+                                GroupName = GroupDNMappings[DNString];
+                            }else
+                            {
+                                GroupName = Helpers.ConvertADName(DNString, Helpers.ADSTypes.ADS_NAME_TYPE_DN, Helpers.ADSTypes.ADS_NAME_TYPE_NT4);
+                                if (GroupName != null)
+                                {
+                                    GroupName = GroupName.Split('\\').Last();
+                                }else
+                                {
+                                    GroupName = DNString.Substring(0, DNString.IndexOf(",")).Split('=').Last();
+                                }
+                                GroupDNMappings[DNString] = GroupName;
+                            }
+                            Console.WriteLine(GroupName + "@" + GroupDomain + "," + AccountName + "," + ObjectType);
+                        }
                     }
                 }
             }
