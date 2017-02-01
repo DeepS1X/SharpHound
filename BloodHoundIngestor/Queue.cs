@@ -11,7 +11,7 @@ namespace BloodHoundIngestor
         static ReaderWriterLockSlim _rw = new ReaderWriterLockSlim();
         static Queue<T> queue = new Queue<T>();
 
-        public T read()
+        public T get()
         {
             _rw.EnterReadLock();
             T item;
@@ -26,7 +26,7 @@ namespace BloodHoundIngestor
             }
         }
 
-        public void write(T item)
+        public void add(T item)
         {
             _rw.EnterWriteLock();
             try
@@ -39,9 +39,15 @@ namespace BloodHoundIngestor
             }
         }
 
-        public int count()
-        {
-            return queue.Count;
+        public int Count {
+            get
+            {
+                return queue.Count;
+            }
+            set
+            {
+
+            }
         }
     }
 }
