@@ -25,7 +25,7 @@ namespace BloodHoundIngestor
             List<string> Domains = new List<string>();
             if (options.SearchForest)
             {
-
+                Domains = Helpers.GetForestDomains();
             }
             else if (options.Domain != null)
             {
@@ -52,7 +52,6 @@ namespace BloodHoundIngestor
                     {
                         inQueue.add(y[0].ToString());
                     }
-                    
                 }
                 searcher.Dispose();
 
@@ -271,7 +270,5 @@ namespace BloodHoundIngestor
             static extern IntPtr LocalFree(IntPtr hMem);
             #endregion
         }
-
-
     }
 }

@@ -59,7 +59,6 @@ namespace BloodHoundIngestor
                     string MemberDomain = null;
                     string DistinguishedName = result.Properties["distinguishedname"][0].ToString();
                     string ObjectType = null;
-                    string MemberName = null;
 
                     if (DistinguishedName.Contains("ForeignSecurityPrincipals") && DistinguishedName.Contains("S-1-5-21"))
                     {

@@ -2,6 +2,7 @@
 using CommandLine.Text;
 using System;
 using System.Collections.Generic;
+using System.DirectoryServices.ActiveDirectory;
 using System.Linq;
 using System.Security.Permissions;
 using System.Text;
@@ -76,16 +77,19 @@ namespace BloodHoundIngestor
 
             AppDomain currentDomain = AppDomain.CurrentDomain;
             currentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
-
             if (CommandLine.Parser.Default.ParseArguments(args, options))
             {
                 Helpers.CreateInstance(options);
                 if (options.Domain != null)
                 {
-                    if (Helpers.Instance.GetDomain(options.Domain) == null)
+                    Domain d = Helpers.Instance.GetDomain(options.Domain);
+                    if (d == null)
                     {
                         Console.WriteLine("Bad Domain Value Provided");
                         Environment.Exit(0);
+                    }else
+                    {
+                        options.Domain = d.Name;
                     }
                 }
                 //DomainTrustMapping TrustMapper = new DomainTrustMapping(options);

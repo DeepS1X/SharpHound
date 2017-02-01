@@ -14,6 +14,7 @@ namespace BloodHoundIngestor
         private static Helpers instance;
 
         private Dictionary<String, Domain> DomainResolveCache;
+        private List<String> DomainList;
         private Options options;
         private Type TranslateName;
         object TranslateInstance;
@@ -49,6 +50,7 @@ namespace BloodHoundIngestor
         public Helpers(Options cli)
         {
             DomainResolveCache = new Dictionary<string, Domain>();
+            DomainList = null;
             options = cli;
             TranslateName = Type.GetTypeFromProgID("NameTranslate");
             TranslateInstance = Activator.CreateInstance(TranslateName);
@@ -91,6 +93,43 @@ namespace BloodHoundIngestor
             Searcher.ReferralChasing = ReferralChasingOption.All;
 
             return Searcher;
+        }
+
+        public List<String> GetForestDomains(string Forest = null)
+        {
+            if (DomainList != null)
+            {
+                return DomainList;
+            }
+            Forest f = null;
+            List<String> domains = new List<String>();
+            
+            if (Forest == null)
+            {
+                f = System.DirectoryServices.ActiveDirectory.Forest.GetCurrentForest();
+            }else
+            {
+                DirectoryContext context = new DirectoryContext(DirectoryContextType.Forest,Forest);
+                try
+                {
+                    f = System.DirectoryServices.ActiveDirectory.Forest.GetForest(context);
+
+                }
+                catch
+                {
+                    return domains;
+                }
+            }
+
+            foreach (var d in f.Domains)
+            {
+                domains.Add(d.ToString());
+            }
+
+            DomainList = domains;
+
+            return domains;
+            
         }
 
         public Domain GetDomain(string Domain = null)
