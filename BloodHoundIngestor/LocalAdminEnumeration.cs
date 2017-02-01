@@ -143,8 +143,6 @@ namespace BloodHoundIngestor
                         {
                             outQueue.add(s);
                         }
-
-                        Thread.Sleep(5000);
                     }
                     catch (Exception e)
                     {

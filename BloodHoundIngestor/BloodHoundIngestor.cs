@@ -3,6 +3,7 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Permissions;
 using System.Text;
 
 namespace BloodHoundIngestor
@@ -68,9 +69,13 @@ namespace BloodHoundIngestor
     }
     class BloodHoundIngestor
     {
+        [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.ControlAppDomain)]
         static void Main(string[] args)
         {
             var options = new Options();
+
+            AppDomain currentDomain = AppDomain.CurrentDomain;
+            currentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
 
             if (CommandLine.Parser.Default.ParseArguments(args, options))
             {
@@ -89,6 +94,13 @@ namespace BloodHoundIngestor
             }
             
             Environment.Exit(0);
+        }
+
+        static void MyHandler(object sender, UnhandledExceptionEventArgs args)
+        {
+            Exception e = (Exception)args.ExceptionObject;
+            Console.WriteLine("MyHandler caught : " + e.Message);
+            Console.WriteLine("Runtime terminating: {0}", args.IsTerminating);
         }
     }
 }
