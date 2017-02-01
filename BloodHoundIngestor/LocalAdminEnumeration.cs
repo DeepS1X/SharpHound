@@ -10,11 +10,8 @@ namespace BloodHoundIngestor
 {
     class LocalAdminEnumeration
     {
-
         private Helpers Helpers;
         private Options options;
-        private Dictionary<string, string> GroupDNMappings;
-        private Dictionary<string, string> PrimaryGroups;
 
         public LocalAdminEnumeration(Options cli)
         {
@@ -95,6 +92,7 @@ namespace BloodHoundIngestor
             int EntriesRead = 0;
             int TotalRead = 0;
             IntPtr ResumeHandle = IntPtr.Zero;
+            
 
             int val = NetLocalGroupGetMembers(Target, Group, QueryLevel, out PtrInfo, -1, out EntriesRead, out TotalRead, ResumeHandle);
             if (EntriesRead > 0)
@@ -105,8 +103,9 @@ namespace BloodHoundIngestor
                 {
                     Members[i] = (LOCALGROUP_MEMBERS_INFO_2)Marshal.PtrToStructure(iter, typeof(LOCALGROUP_MEMBERS_INFO_2));
                     iter = (IntPtr)((int)iter + Marshal.SizeOf(typeof(LOCALGROUP_MEMBERS_INFO_2)));
-                    string ObjectType = Members[i].lgrmi2_sidusage == 1 ? "User" : "Group";
+                    //string ObjectType = Members[i].lgrmi2_sidusage == 1 ? "User" : "Group";
                     string ObjectName = Members[i].lgrmi2_domainandname;
+                    Console.WriteLine(ObjectName + "," + Members[i].lgrmi2_sidusage);
                 }
                 NetApiBufferFree(PtrInfo);
             }
