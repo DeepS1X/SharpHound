@@ -18,11 +18,11 @@ namespace BloodHoundIngestor
         {
             Helpers = Helpers.Instance;
             options = cli;
-            EnumerateLocalAdmins();
         }
 
-        private void EnumerateLocalAdmins()
+        public void EnumerateLocalAdmins()
         {
+            Console.WriteLine("Starting Local Admin Enumeration");
             List<string> Domains = new List<string>();
             if (options.SearchForest)
             {

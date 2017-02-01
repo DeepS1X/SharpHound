@@ -25,7 +25,7 @@ namespace BloodHoundIngestor
         }
 
         [Option('c', "CollectionMethod", DefaultValue = CollectionMethod.Default, HelpText = "Collection Method (Group, LocalGroup, GPOLocalGroup, Session, LoggedOn, ComputerOnly, Trusts, Stealth, Default")]
-        public CollectionMethod CMethod { get; set; }
+        public CollectionMethod CollMethod { get; set; }
 
         [Option('v',"Verbose", DefaultValue=false, HelpText="Enables Verbose Output")]
         public bool Verbose { get; set; }
@@ -100,14 +100,29 @@ namespace BloodHoundIngestor
                 {
                     Console.WriteLine("Unable to contact domain or invalid domain specified");
                     Environment.Exit(0);
-                }else
+                }
+                else
                 {
                     options.Domain = d.Name;
                 }
-                
-                //DomainTrustMapping TrustMapper = new DomainTrustMapping(options);
-                DomainGroupEnumeration GroupEnumeration = new DomainGroupEnumeration(options);
-                //LocalAdminEnumeration AdminEnumeration = new LocalAdminEnumeration(options);
+
+                if (options.CollMethod.Equals(Options.CollectionMethod.Default))
+                {
+                    DomainTrustMapping TrustMapper = new DomainTrustMapping(options);
+                    TrustMapper.GetDomainTrusts();
+                    DomainGroupEnumeration GroupEnumeration = new DomainGroupEnumeration(options);
+                    GroupEnumeration.EnumerateGroupMembership();
+                    LocalAdminEnumeration AdminEnumeration = new LocalAdminEnumeration(options);
+                    AdminEnumeration.EnumerateLocalAdmins();
+                }else if (options.CollMethod.Equals(Options.CollectionMethod.Trusts))
+                {
+                    DomainTrustMapping TrustMapper = new DomainTrustMapping(options);
+                    TrustMapper.GetDomainTrusts();
+                }else if (options.CollMethod.Equals(Options.CollectionMethod.LocalGroup))
+                {
+                    LocalAdminEnumeration AdminEnumeration = new LocalAdminEnumeration(options);
+                    AdminEnumeration.EnumerateLocalAdmins();
+                }
             }
             
         }

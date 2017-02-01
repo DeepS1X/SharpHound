@@ -17,11 +17,11 @@ namespace BloodHoundIngestor
         {
             Helpers = Helpers.Instance;
             options = cli;
-            EnumerateGroupMembership();
         }
 
-        private void EnumerateGroupMembership()
+        public void EnumerateGroupMembership()
         {
+            Console.WriteLine("Starting Group Member Enumeration");
             List<string> Domains = new List<string>();
             StreamWriter w = null;
             if (options.URI == null)
@@ -91,7 +91,7 @@ namespace BloodHoundIngestor
                     ResultPropertyValueCollection SAT = result.Properties["samaccounttype"];
                     if (SAT.Count == 0)
                     {
-                        options.WriteVerbose("Unknown Account Type");
+                        //options.WriteVerbose("Unknown Account Type");
                         continue;
                     }else
                     {

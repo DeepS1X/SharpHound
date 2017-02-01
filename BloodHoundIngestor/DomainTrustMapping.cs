@@ -22,21 +22,11 @@ namespace BloodHoundIngestor
             Tracker = new Stack<Domain>();
             EnumeratedTrusts = new List<DomainTrust>();
             options = cli;
-            GetDomainTrusts();
-
-            string Filename = options.CSVPrefix.Equals("") ? "trusts.csv" : options.CSVPrefix + "_trusts.csv";
-
-            using (StreamWriter writer = new StreamWriter(Path.Combine(options.CSVFolder, Filename)))
-            {
-                foreach (DomainTrust d in EnumeratedTrusts)
-                {
-                    writer.WriteLine(d.ToCSV());
-                }
-            }
         }
 
         public void GetDomainTrusts()
         {
+            Console.WriteLine("Starting Domain Trust Enumeration");
             Domain CurrentDomain;
             
             CurrentDomain = Helpers.GetDomain();
@@ -53,12 +43,12 @@ namespace BloodHoundIngestor
                 CurrentDomain = Tracker.Pop();
                 if (SeenDomains.Contains(CurrentDomain.Name))
                 {
-                    return;
+                    continue;
                 }
 
                 if (CurrentDomain == null)
                 {
-                    return;
+                    continue;
                 }
                 options.WriteVerbose("Enumerating trusts for " + CurrentDomain.Name);
                 SeenDomains.Add(CurrentDomain.Name);
@@ -72,6 +62,14 @@ namespace BloodHoundIngestor
                     dt.TrustDirection = Trust.TrustDirection;
                     EnumeratedTrusts.Add(dt);
                     Tracker.Push(Helpers.GetDomain(Trust.TargetName));
+                }
+            }
+            using (StreamWriter writer = new StreamWriter(options.GetFilePath("trusts.csv")))
+            {
+                writer.WriteLine("SourceDomain,TargetDomain,TrustDirection,TrustType,Transitive");
+                foreach (DomainTrust d in EnumeratedTrusts)
+                {
+                    writer.WriteLine(d.ToCSV());
                 }
             }
         }
