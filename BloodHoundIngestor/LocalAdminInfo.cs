@@ -10,20 +10,25 @@ namespace BloodHoundIngestor
         public string server { get; set; }
         public string objectname { get; set; }
         public string objecttype { get; set; }
+        public string sid { get; set; }
 
         public LocalAdminInfo()
         {
 
         }
 
-        public string ToParam()
+        public Object ToParam()
         {
-            return "";
+            return new
+            {
+                account = objectname.ToUpper(),
+                computer = server.ToUpper()
+            };
         }
 
         public string ToCSV()
         {
-            return String.Format("{0},{1},{2}", server, objectname, objecttype);
+            return String.Format("{0},{1},{2}", server.ToUpper(), objectname.ToUpper(), objecttype.ToLower());
         }
     }
 }
