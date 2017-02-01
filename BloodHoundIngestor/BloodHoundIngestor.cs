@@ -3,6 +3,7 @@ using CommandLine.Text;
 using System;
 using System.Collections.Generic;
 using System.DirectoryServices.ActiveDirectory;
+using System.IO;
 using System.Linq;
 using System.Security.Permissions;
 using System.Text;
@@ -67,6 +68,19 @@ namespace BloodHoundIngestor
                 Console.WriteLine(Message);
             }
         }
+
+        public string GetFilePath(string filename)
+        {
+            string f;
+            if (CSVPrefix.Equals(""))
+            {
+                f = filename;
+            }else
+            {
+                f = CSVPrefix + "_" + filename;
+            }
+            return Path.Combine(CSVFolder, f);
+        }
     }
     class BloodHoundIngestor
     {
@@ -80,24 +94,22 @@ namespace BloodHoundIngestor
             if (CommandLine.Parser.Default.ParseArguments(args, options))
             {
                 Helpers.CreateInstance(options);
-                if (options.Domain != null)
+                
+                Domain d = Helpers.Instance.GetDomain(options.Domain);
+                if (d == null)
                 {
-                    Domain d = Helpers.Instance.GetDomain(options.Domain);
-                    if (d == null)
-                    {
-                        Console.WriteLine("Bad Domain Value Provided");
-                        Environment.Exit(0);
-                    }else
-                    {
-                        options.Domain = d.Name;
-                    }
+                    Console.WriteLine("Unable to contact domain or invalid domain specified");
+                    Environment.Exit(0);
+                }else
+                {
+                    options.Domain = d.Name;
                 }
+                
                 //DomainTrustMapping TrustMapper = new DomainTrustMapping(options);
-                //DomainGroupEnumeration GroupEnumeration = new DomainGroupEnumeration(options);
-                LocalAdminEnumeration AdminEnumeration = new LocalAdminEnumeration(options);
+                DomainGroupEnumeration GroupEnumeration = new DomainGroupEnumeration(options);
+                //LocalAdminEnumeration AdminEnumeration = new LocalAdminEnumeration(options);
             }
             
-            Environment.Exit(0);
         }
 
         static void MyHandler(object sender, UnhandledExceptionEventArgs args)

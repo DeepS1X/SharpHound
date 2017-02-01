@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.DirectoryServices;
+using System.IO;
 using System.Linq;
 
 namespace BloodHoundIngestor
@@ -22,13 +23,17 @@ namespace BloodHoundIngestor
         private void EnumerateGroupMembership()
         {
             List<string> Domains = new List<string>();
-            //string Filename = options.CSVPrefix.Equals("") ? "group_membership.csv" : options.CSVPrefix + "_group_membership.csv";
-            //StreamWriter writer = new StreamWriter(Path.Combine(options.CSVFolder, Filename));
+            StreamWriter w = null;
+            if (options.URI == null)
+            {
+                w = new StreamWriter(options.GetFilePath("group_memberships.csv"));
+                w.WriteLine("GroupName,AccountName,AccountType");
+            }
             String[] props = new String[] { "samaccountname", "distinguishedname", "cn", "dnshostname", "samaccounttype", "primarygroupid", "memberof" };
             int counter = 0;
             if (options.SearchForest)
             {
-
+                Domains = Helpers.GetForestDomains();
             }else if (options.Domain != null)
             {
                 Domains.Add(Helpers.GetDomain(options.Domain).Name);
@@ -54,7 +59,7 @@ namespace BloodHoundIngestor
                     if (counter % 1000 == 0 && counter > 0)
                     {
                         options.WriteVerbose("Group objects enumerated: " + counter.ToString());
-                        //writer.Flush();
+                        w.Flush();
                     }
                     string MemberDomain = null;
                     string DistinguishedName = result.Properties["distinguishedname"][0].ToString();
@@ -161,7 +166,10 @@ namespace BloodHoundIngestor
                         if (PrimaryGroupName != null)
                         {
                             PrimaryGroup = PrimaryGroupName + "@" + DomainName;
-                            Console.WriteLine(PrimaryGroup + "," + AccountName + "," + ObjectType);
+                            if (w != null)
+                            {
+                                w.WriteLine(String.Format("{0},{1},{2}", PrimaryGroup, AccountName, ObjectType));
+                            }
                         }
                         
                     }
@@ -189,11 +197,18 @@ namespace BloodHoundIngestor
                                 }
                                 GroupDNMappings[DNString] = GroupName;
                             }
-                            Console.WriteLine(GroupName + "@" + GroupDomain + "," + AccountName + "," + ObjectType);
+                            if (w != null)
+                            {
+                                w.WriteLine(String.Format("{0}@{1},{2},{3}", GroupName,DomainName, AccountName, ObjectType));
+                            }
                         }
                     }
                 }
             }
+
+            w.Flush();
+            w.Close();
+            w.Dispose();
         }
     }
 }

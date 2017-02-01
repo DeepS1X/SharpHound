@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.DirectoryServices;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -36,11 +37,16 @@ namespace BloodHoundIngestor
                 Domains.Add(Helpers.GetDomain().Name);
             }
 
+            EnumerationQueue<LocalAdminInfo> outQueue = new EnumerationQueue<LocalAdminInfo>();
+            Writer w = new Writer();
+            Thread write = new Thread(unused => w.Write(outQueue, options));
+            write.Start();
+
             foreach (String DomainName in Domains)
             {
+                int count = 0;
                 string DomainSID = Helpers.GetDomainSid(DomainName);
                 EnumerationQueue<string> inQueue = new EnumerationQueue<string>();
-                EnumerationQueue<LocalAdminInfo> outQueue = new EnumerationQueue<LocalAdminInfo>();
 
                 DirectorySearcher searcher = Helpers.GetDomainSearcher(DomainName);
                 searcher.Filter = "(sAMAccountType=805306369)";
@@ -51,8 +57,10 @@ namespace BloodHoundIngestor
                     if (y.Count > 0)
                     {
                         inQueue.add(y[0].ToString());
+                        count++;
                     }
                 }
+                options.WriteVerbose(String.Format("Enumerating {0} machines in domain {1}",count,DomainName));
                 searcher.Dispose();
 
                 for (int i = 0; i < options.Threads; i++)
@@ -69,45 +77,55 @@ namespace BloodHoundIngestor
                     consumer.Start();
                     threads.Add(consumer);
                 }
-
-                Writer w = new Writer();
-                Thread write = new Thread(unused => w.Write(outQueue));
-                write.Start();
-
+                
                 foreach (var t in threads)
                 {
                     t.Join();
                 }
-
-                outQueue.add(null);
-
             }
+            outQueue.add(null);
+            write.Join();
         }
 
         public class Writer
         {
-            public void Write(Object outq)
+            public void Write(Object outq, Object cli)
             {
                 int count = 0;
                 EnumerationQueue<LocalAdminInfo> outQueue = (EnumerationQueue<LocalAdminInfo>)outq;
+                Options o = (Options)cli;
 
-                while (true)
+                if (o.URI == null)
                 {
-                    try
+                    using (StreamWriter writer = new StreamWriter(o.GetFilePath("local_admins.csv")))
                     {
-                        LocalAdminInfo info = outQueue.get();
-                        if (info == null)
+                        writer.WriteLine("ComputerName,AccountName,AccountType");
+                        while (true)
                         {
-                            break;
+                            try
+                            {
+                                LocalAdminInfo info = outQueue.get();
+                                if (info == null)
+                                {
+                                    writer.Flush();
+                                    break;
+                                }
+                                writer.WriteLine(info.ToCSV());
+                                
+                                count++;
+                                if (count % 1000 == 0)
+                                {
+                                    writer.Flush();
+                                }
+                            }
+                            catch
+                            {                                
+                                continue;
+                            }
                         }
-                        Console.WriteLine(info.ToCSV());
-                        count++;
-                    }
-                    catch
-                    {
-                        continue;
                     }
                 }
+                
             }
         }
 
