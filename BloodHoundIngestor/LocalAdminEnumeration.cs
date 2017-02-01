@@ -47,7 +47,12 @@ namespace BloodHoundIngestor
                 searcher.PropertiesToLoad.Add("dnshostname");
                 foreach (SearchResult x in searcher.FindAll())
                 {
-                    inQueue.add(x.Properties["dnshostname"][0].ToString());
+                    var y = x.Properties["dnshostname"];
+                    if (y.Count > 0)
+                    {
+                        inQueue.add(y[0].ToString());
+                    }
+                    
                 }
                 searcher.Dispose();
 
@@ -127,8 +132,6 @@ namespace BloodHoundIngestor
                         {
                             break;
                         }
-
-                        Console.WriteLine(host);
 
                         List<LocalAdminInfo> results = LocalGroupAPI(host, "Administrators",DomainSID);
                         if (results.Count == 0)
