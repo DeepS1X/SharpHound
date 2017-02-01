@@ -233,6 +233,8 @@ namespace BloodHoundIngestor
                     }
                     NetApiBufferFree(PtrInfo);
 
+                    string MachineSID = users.First(s => s.sid.EndsWith("-500") && s.sid.StartsWith(DomainSID)).sid;
+                    MachineSID = MachineSID.Substring(0, MachineSID.LastIndexOf("-"));
                     users = users.Where(element => element.sid.StartsWith(DomainSID)).ToList();
                 }
                 return users;
