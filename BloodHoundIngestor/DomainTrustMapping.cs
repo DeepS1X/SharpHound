@@ -41,6 +41,7 @@ namespace BloodHoundIngestor
             while (Tracker.Count > 0)
             {
                 CurrentDomain = Tracker.Pop();
+                
                 if (SeenDomains.Contains(CurrentDomain.Name))
                 {
                     continue;
@@ -61,7 +62,19 @@ namespace BloodHoundIngestor
                     dt.TrustType = Trust.TrustType;
                     dt.TrustDirection = Trust.TrustDirection;
                     EnumeratedTrusts.Add(dt);
-                    Tracker.Push(Helpers.GetDomain(Trust.TargetName));
+                    try
+                    {
+                        Domain Tar = Helpers.GetDomain(Trust.TargetName);
+                        if (Tar != null)
+                        {
+                            Tracker.Push(Tar);
+                        }
+                    }
+                    catch
+                    {
+                        options.WriteVerbose("Unable to contact " + Trust.TargetName + " to enumerate trusts.");
+                    }
+                    
                 }
             }
             using (StreamWriter writer = new StreamWriter(options.GetFilePath("trusts.csv")))

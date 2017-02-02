@@ -161,9 +161,8 @@ namespace BloodHoundIngestor
                     DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, Domain);
                     DomainObject = System.DirectoryServices.ActiveDirectory.Domain.GetDomain(dc);
                 }
-                catch
+                catch (Exception e)
                 {
-                    Console.WriteLine("Error retrieving current domain");
                     DomainObject = null;
                 }
                 
@@ -424,16 +423,17 @@ namespace BloodHoundIngestor
 
             //PropertyInfo Referral = TranslateName.GetProperty("ChaseReferrals");
             //Referral.SetValue(obj, 0x60, null);
-
-            object[] args = new object[2];
-            args[0] = (int)InputType;
-            args[1] = ObjectName;
-            TranslateName.InvokeMember("Set", BindingFlags.InvokeMethod, null, TranslateInstance, args);
-
-            args = new object[1];
-            args[0] = (int)OutputType;
+            
             try
             {
+                object[] args = new object[2];
+                args[0] = (int)InputType;
+                args[1] = ObjectName;
+                TranslateName.InvokeMember("Set", BindingFlags.InvokeMethod, null, TranslateInstance, args);
+
+                args = new object[1];
+                args[0] = (int)OutputType;
+
                 string Result = (string)TranslateName.InvokeMember("Get", BindingFlags.InvokeMethod, null, TranslateInstance, args);
                 return Result;
             }

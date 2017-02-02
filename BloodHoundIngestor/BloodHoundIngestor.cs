@@ -101,10 +101,6 @@ namespace BloodHoundIngestor
                     Console.WriteLine("Unable to contact domain or invalid domain specified");
                     Environment.Exit(0);
                 }
-                else
-                {
-                    options.Domain = d.Name;
-                }
 
                 if (options.CollMethod.Equals(Options.CollectionMethod.Default))
                 {
@@ -122,6 +118,10 @@ namespace BloodHoundIngestor
                 {
                     LocalAdminEnumeration AdminEnumeration = new LocalAdminEnumeration(options);
                     AdminEnumeration.EnumerateLocalAdmins();
+                }else if (options.CollMethod.Equals(Options.CollectionMethod.Group))
+                {
+                    DomainGroupEnumeration GroupEnumeration = new DomainGroupEnumeration(options);
+                    GroupEnumeration.EnumerateGroupMembership();
                 }
             }
             

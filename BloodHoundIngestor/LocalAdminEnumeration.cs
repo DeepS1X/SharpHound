@@ -115,6 +115,7 @@ namespace BloodHoundIngestor
                                 count++;
                                 if (count % 1000 == 0)
                                 {
+                                    Console.WriteLine("Local Admins Enumerated " + count);
                                     writer.Flush();
                                 }
                             }
