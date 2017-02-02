@@ -139,8 +139,6 @@ namespace BloodHoundIngestor
                 EnumerationQueue<LocalAdminInfo> outQueue = (EnumerationQueue<LocalAdminInfo>)outq;
                 string DomainSID = (string)dsid;
 
-                Random rnd = new Random();
-
                 while (true)
                 {
                     try

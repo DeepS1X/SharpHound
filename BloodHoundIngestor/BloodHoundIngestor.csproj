@@ -58,6 +58,7 @@
     <Compile Include="DomainTrustMapping.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="LocalAdminEnumeration.cs" />
+    <Compile Include="Objects\GroupEnumObject.cs" />
     <Compile Include="Objects\GroupMembershipInfo.cs" />
     <Compile Include="Objects\LocalAdminInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

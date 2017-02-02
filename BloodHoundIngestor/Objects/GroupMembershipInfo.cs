@@ -7,9 +7,9 @@ namespace BloodHoundIngestor.Objects
 {
     class GroupMembershipInfo
     {
-        string GroupName { get; set; }
-        string AccountName { get; set; }
-        string ObjectType { get; set; }
+        public string GroupName { get; set; }
+        public string AccountName { get; set; }
+        public string ObjectType { get; set; }
 
         public GroupMembershipInfo()
         {

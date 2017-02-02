@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.DirectoryServices;
 using System.DirectoryServices.ActiveDirectory;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Principal;
@@ -18,6 +19,7 @@ namespace BloodHoundIngestor
         private Options options;
         private Type TranslateName;
         object TranslateInstance;
+        private Dictionary<string, StreamWriter> writerlist;
 
         public enum  ADSTypes{
             ADS_NAME_TYPE_DN = 1,
@@ -59,6 +61,42 @@ namespace BloodHoundIngestor
             args[0] = 3;
             args[1] = "";
             TranslateName.InvokeMember("Init", BindingFlags.InvokeMethod, null, TranslateInstance, args);
+
+            if (options.URI == null)
+            {
+                writerlist = new Dictionary<string, StreamWriter>();
+            }
+        }
+
+        public void CreateWriter(string filename)
+        {
+            if (options.URI == null)
+            {
+                StreamWriter w = new StreamWriter(options.GetFilePath(filename));
+                w.AutoFlush = true;
+                writerlist[filename] = w;
+            }
+        }
+
+        public bool IsWritingCSV()
+        {
+            return options.URI == null;
+        }
+
+        public void WriteLocked(string filename, string output)
+        {
+            StreamWriter w = writerlist[filename];
+            lock (w){
+                w.WriteLine(output);
+            }
+        }
+
+        public void CloseWriter(string filename)
+        {
+            StreamWriter w = writerlist[filename];
+            w.Flush();
+            w.Close();
+            w.Dispose();
         }
 
         public DirectorySearcher GetDomainSearcher(string Domain = null, string SearchBase = null)
@@ -161,7 +199,7 @@ namespace BloodHoundIngestor
                     DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, Domain);
                     DomainObject = System.DirectoryServices.ActiveDirectory.Domain.GetDomain(dc);
                 }
-                catch (Exception e)
+                catch
                 {
                     DomainObject = null;
                 }

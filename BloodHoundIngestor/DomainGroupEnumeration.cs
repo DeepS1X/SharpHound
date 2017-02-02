@@ -16,8 +16,6 @@ namespace BloodHoundIngestor
         private Options options;
         private ConcurrentDictionary<string, string> GroupDNMappings;
         private ConcurrentDictionary<string, string> PrimaryGroups;
-        StreamWriter w = null;
-        static int count = 0;
 
         public DomainGroupEnumeration(Options cli)
         {
@@ -25,24 +23,13 @@ namespace BloodHoundIngestor
             options = cli;
         }
 
-        private void WriteString(string val)
-        {
-            lock (w)
-            {
-                w.WriteLine(val);
-            }
-        }
-
         public void EnumerateGroupMembership()
         {
             Console.WriteLine("Starting Group Member Enumeration");
+
+            ConcurrentQueue<GroupMembershipInfo> outq = new ConcurrentQueue<GroupMembershipInfo>();
             List<string> Domains = new List<string>();
             
-            if (options.URI == null)
-            {
-                w = new StreamWriter(options.GetFilePath("group_memberships.csv"));
-                WriteString("GroupName,AccountName,AccountType");
-            }
             String[] props = new String[] { "samaccountname", "distinguishedname", "cn", "dnshostname", "samaccounttype", "primarygroupid", "memberof" };
             if (options.SearchForest)
             {
@@ -54,9 +41,13 @@ namespace BloodHoundIngestor
             {
                 Domains.Add(Helpers.GetDomain().Name);
             }
+            Writer w = new Writer();
+            Thread write = new Thread(unused => w.Write(outq, options));
+            write.Start();
 
             foreach (string DomainName in Domains)
             {
+                ConcurrentQueue<GroupEnumObject> inq = new ConcurrentQueue<GroupEnumObject>();
                 options.WriteVerbose("Starting Group Membership Enumeration for " + DomainName);
                 GroupDNMappings = new ConcurrentDictionary<string, string>();
                 PrimaryGroups = new ConcurrentDictionary<string, string>();
@@ -67,13 +58,121 @@ namespace BloodHoundIngestor
                 
                 DomainSearcher.PropertiesToLoad.AddRange(props);
 
-                Parallel.ForEach(DomainSearcher.FindAll().OfType<SearchResult>(), result =>
+                List<Thread> threads = new List<Thread>();
+
+                for (int i = 0; i < options.Threads; i++)
                 {
-                    if (count % 1000 == 0 && count > 0)
+                    Enumerator e = new Enumerator();
+                    Thread consumer = new Thread(unused => e.ConsumeAndEnumerate(inq, outq, GroupDNMappings, PrimaryGroups, options));
+                    consumer.Start();
+                    threads.Add(consumer);
+                }
+
+                foreach (SearchResult r in DomainSearcher.FindAll())
+                {
+                    inq.Enqueue(new GroupEnumObject{ result = r, DomainSID = DomainSid, DomainName=DomainName });
+                }
+
+                for (int i = 0; i < options.Threads; i++)
+                {
+                    inq.Enqueue(null);
+                }
+
+                foreach (var t in threads)
+                {
+                    t.Join();
+                }
+
+                DomainSearcher.Dispose();
+            }
+
+            outq.Enqueue(null);
+            write.Join();
+        }
+    }
+
+    public class Writer
+    {
+        public void Write(Object outq, Object cli)
+        {
+            int count = 0;
+            ConcurrentQueue<GroupMembershipInfo> outQueue = (ConcurrentQueue<GroupMembershipInfo>)outq;
+            Options o = (Options)cli;
+
+            if (o.URI == null)
+            {
+                using (StreamWriter writer = new StreamWriter(o.GetFilePath("group_memberships.csv")))
+                {
+                    writer.WriteLine("GroupName,AccountName,AccountType");
+                    while (true)
                     {
-                        options.WriteVerbose("Group objects enumerated: " + count.ToString());
-                        w.Flush();
+                        while (outQueue.IsEmpty)
+                        {
+                            Thread.Sleep(25);
+                        }
+
+                        try
+                        {
+                            GroupMembershipInfo info;
+                            outQueue.TryDequeue(out info);
+                            if (info == null)
+                            {
+                                writer.Flush();
+                                break;
+                            }
+                            writer.WriteLine(info.ToCSV());
+
+                            count++;
+                            if (count % 1000 == 0)
+                            {
+                                o.WriteVerbose("Group Objects Enumerated: " + count);
+                                writer.Flush();
+                            }
+                        }
+                        catch
+                        {
+                            continue;
+                        }
                     }
+                }
+            }
+
+        }
+    }
+
+    public class Enumerator
+    {
+        public void ConsumeAndEnumerate(Object inq, Object outq, Object dnmap, Object pgmap, Object cli)
+        {
+            ConcurrentQueue<GroupEnumObject> inQueue = (ConcurrentQueue<GroupEnumObject>)inq;
+            ConcurrentQueue<GroupMembershipInfo> outQueue = (ConcurrentQueue<GroupMembershipInfo>)outq;
+            ConcurrentDictionary<string, string> GroupDNMappings = (ConcurrentDictionary<string, string>)dnmap;
+            ConcurrentDictionary<string, string> PrimaryGroups = (ConcurrentDictionary<string, string>)pgmap;
+            Options options = (Options)cli;
+            Helpers Helpers = Helpers.Instance;
+
+            while (true)
+            {
+                SearchResult result;
+                string DomainSid;
+                string DomainName;
+                GroupEnumObject get;
+                while (inQueue.IsEmpty)
+                {
+                    Thread.Sleep(25);
+                }
+
+                if (inQueue.TryDequeue(out get))
+                {
+                    if (get == null)
+                    {
+                        break;
+                    }
+
+                    result = get.result;
+                    DomainSid = get.DomainSID;
+                    DomainName = get.DomainName;
+
                     string MemberDomain = null;
                     string DistinguishedName = result.Properties["distinguishedname"][0].ToString();
                     string ObjectType = null;
@@ -96,8 +195,6 @@ namespace BloodHoundIngestor
                     {
                         MemberDomain = DistinguishedName.Substring(DistinguishedName.IndexOf("DC=")).Replace("DC=", "").Replace(",", ".");
                     }
-
-                    Interlocked.Increment(ref count);
 
                     string SAMAccountType = null;
                     string SAMAccountName = null;
@@ -167,12 +264,12 @@ namespace BloodHoundIngestor
 
                     if (AccountName == null)
                     {
-                        return;
+                        continue;
                     }
 
                     if (AccountName.StartsWith("@"))
                     {
-                        return;
+                        continue;
                     }
 
                     ResultPropertyValueCollection PGI = result.Properties["primarygroupid"];
@@ -197,9 +294,15 @@ namespace BloodHoundIngestor
                         if (PrimaryGroupName != null)
                         {
                             PrimaryGroup = PrimaryGroupName + "@" + DomainName;
-                            if (w != null)
+                            if (Helpers.IsWritingCSV())
                             {
-                                WriteString(String.Format("{0},{1},{2}", PrimaryGroup, AccountName, ObjectType));
+                                GroupMembershipInfo info = new GroupMembershipInfo
+                                {
+                                    GroupName = PrimaryGroup,
+                                    AccountName= AccountName,
+                                    ObjectType = ObjectType
+                                };
+                                outQueue.Enqueue(info);
                             }
                         }
 
@@ -215,7 +318,7 @@ namespace BloodHoundIngestor
                             string GroupName = null;
                             if (GroupDNMappings.ContainsKey(DNString))
                             {
-                                GroupDNMappings.TryGetValue(DNString,out GroupName);
+                                GroupDNMappings.TryGetValue(DNString, out GroupName);
                             }
                             else
                             {
@@ -228,30 +331,20 @@ namespace BloodHoundIngestor
                                 {
                                     GroupName = DNString.Substring(0, DNString.IndexOf(",")).Split('=').Last();
                                 }
-                                GroupDNMappings.TryAdd(DNString,GroupName);
+                                GroupDNMappings.TryAdd(DNString, GroupName);
                             }
-                            if (w != null)
+
+                            GroupMembershipInfo info = new GroupMembershipInfo
                             {
-                                WriteString(String.Format("{0}@{1},{2},{3}", GroupName, DomainName, AccountName, ObjectType));
-                            }
+                                GroupName = GroupName + "@" + DomainName,
+                                AccountName = AccountName,
+                                ObjectType = ObjectType
+                            };
+                            outQueue.Enqueue(info);
                         }
                     }
-                });
+                }
             }
-
-            w.Flush();
-            w.Close();
-            w.Dispose();
-        }
-    }
-
-    public class Enumerator
-    {
-        public void ConsumeAndEnumerate(Object inq, Object outq, Object dnmap, Object pgmap)
-        {
-            EnumerationQueue<SearchResult> inQueue = (EnumerationQueue<SearchResult>)inq;
-            EnumerationQueue<GroupMembershipInfo> outQueue = (EnumerationQueue<GroupMembershipInfo>)outq;
-            ConcurrentQueue<string> q;
         }
     }
 }
