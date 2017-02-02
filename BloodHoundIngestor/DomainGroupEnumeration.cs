@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.DirectoryServices;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace BloodHoundIngestor
         private Options options;
         private ConcurrentDictionary<string, string> GroupDNMappings;
         private ConcurrentDictionary<string, string> PrimaryGroups;
+        public static int count = 0;
 
         public DomainGroupEnumeration(Options cli)
         {
@@ -45,10 +47,12 @@ namespace BloodHoundIngestor
             Thread write = new Thread(unused => w.Write(outq, options));
             write.Start();
 
+            Stopwatch watch = Stopwatch.StartNew();
+
             foreach (string DomainName in Domains)
             {
                 ConcurrentQueue<GroupEnumObject> inq = new ConcurrentQueue<GroupEnumObject>();
-                options.WriteVerbose("Starting Group Membership Enumeration for " + DomainName);
+                Console.WriteLine("Starting Group Membership Enumeration for " + DomainName);
                 GroupDNMappings = new ConcurrentDictionary<string, string>();
                 PrimaryGroups = new ConcurrentDictionary<string, string>();
                 string DomainSid = Helpers.GetDomainSid(DomainName);
@@ -84,7 +88,11 @@ namespace BloodHoundIngestor
                 }
 
                 DomainSearcher.Dispose();
+                Console.WriteLine("Done group enumeration for domain: " + DomainName);
             }
+
+            watch.Stop();
+            Console.WriteLine("Group Member Enumeration done in " + watch.Elapsed);
 
             outq.Enqueue(null);
             write.Join();
@@ -95,7 +103,7 @@ namespace BloodHoundIngestor
     {
         public void Write(Object outq, Object cli)
         {
-            int count = 0;
+            int localcount = 0;
             ConcurrentQueue<GroupMembershipInfo> outQueue = (ConcurrentQueue<GroupMembershipInfo>)outq;
             Options o = (Options)cli;
 
@@ -114,20 +122,22 @@ namespace BloodHoundIngestor
                         try
                         {
                             GroupMembershipInfo info;
-                            outQueue.TryDequeue(out info);
-                            if (info == null)
+                            
+                            if (outQueue.TryDequeue(out info))
                             {
-                                writer.Flush();
-                                break;
-                            }
-                            writer.WriteLine(info.ToCSV());
+                                if (info == null)
+                                {
+                                    writer.Flush();
+                                    break;
+                                }
+                                writer.WriteLine(info.ToCSV());
 
-                            count++;
-                            if (count % 1000 == 0)
-                            {
-                                o.WriteVerbose("Group Objects Enumerated: " + count);
-                                writer.Flush();
-                            }
+                                localcount++;
+                                if (localcount % 1000 == 0)
+                                {
+                                    writer.Flush();
+                                }
+                            }   
                         }
                         catch
                         {
@@ -342,6 +352,11 @@ namespace BloodHoundIngestor
                             };
                             outQueue.Enqueue(info);
                         }
+                    }
+                    Interlocked.Increment(ref DomainGroupEnumeration.count);
+                    if (DomainGroupEnumeration.count % 1000 == 0)
+                    {
+                        options.WriteVerbose("Groups Enumerated: " + DomainGroupEnumeration.count);
                     }
                 }
             }

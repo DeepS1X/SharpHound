@@ -30,7 +30,7 @@ namespace BloodHoundIngestor
         [Option('v',"Verbose", DefaultValue=false, HelpText="Enables Verbose Output")]
         public bool Verbose { get; set; }
 
-        [Option('t',"Threads", DefaultValue = 10, HelpText ="Set Number of Enumeration Threads")]
+        [Option('t',"Threads", DefaultValue = 20, HelpText ="Set Number of Enumeration Threads")]
         public int Threads { get; set; }
 
         [Option('f',"CSVFolder", DefaultValue = ".", HelpText ="Set the directory to output CSV Files")]
