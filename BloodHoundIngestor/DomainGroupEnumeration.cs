@@ -51,6 +51,7 @@ namespace BloodHoundIngestor
 
             foreach (string DomainName in Domains)
             {
+                count = 0;
                 ConcurrentQueue<GroupEnumObject> inq = new ConcurrentQueue<GroupEnumObject>();
                 Console.WriteLine("Starting Group Membership Enumeration for " + DomainName);
                 GroupDNMappings = new ConcurrentDictionary<string, string>();
@@ -88,7 +89,7 @@ namespace BloodHoundIngestor
                 }
 
                 DomainSearcher.Dispose();
-                Console.WriteLine("Done group enumeration for domain: " + DomainName);
+                Console.WriteLine(String.Format("Done group enumeration for domain {0} with {1} groups",DomainName,count));
             }
 
             watch.Stop();
