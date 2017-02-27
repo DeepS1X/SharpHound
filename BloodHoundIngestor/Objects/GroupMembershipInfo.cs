@@ -5,7 +5,7 @@ using System.Text;
 
 namespace BloodHoundIngestor.Objects
 {
-    class GroupMembershipInfo
+    public class GroupMembershipInfo
     {
         public string GroupName { get; set; }
         public string AccountName { get; set; }

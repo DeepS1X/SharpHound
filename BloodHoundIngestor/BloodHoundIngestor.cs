@@ -10,7 +10,7 @@ using System.Text;
 
 namespace BloodHoundIngestor
 {
-    class Options
+    public class Options
     {
         public enum CollectionMethod{
             Group,

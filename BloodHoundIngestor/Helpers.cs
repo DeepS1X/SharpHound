@@ -62,6 +62,11 @@ namespace BloodHoundIngestor
             TranslateName.InvokeMember("Init", BindingFlags.InvokeMethod, null, TranslateInstance, args);
         }
 
+        public bool IsWritingCSV()
+        {
+            return options.URI == null;
+        }
+
         public DirectorySearcher GetDomainSearcher(string Domain = null, string SearchBase = null)
         {
             Domain TargetDomain = GetDomain(Domain);
