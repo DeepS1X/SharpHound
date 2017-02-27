@@ -81,13 +81,12 @@ namespace BloodHoundIngestor
                     EnumerationData.SearchResults.Enqueue(r);
                 }
 
+                DomainSearcher.Dispose();
 
                 EnumerationData.total = lTotal;
                 EnumerationData.SearchResults.Enqueue(null);
 
                 WaitHandle.WaitAll(doneEvents);
-
-                DomainSearcher.Dispose();
                 Console.WriteLine(String.Format("Done group enumeration for domain {0} with {1} objects",DomainName,EnumerationData.count));
             }
 
@@ -124,7 +123,14 @@ namespace BloodHoundIngestor
                         EnumerationData.SearchResults.Enqueue(result);
                         break;
                     }
-                    EnumerateResult(result);
+                    try
+                    {
+                        EnumerateResult(result);
+                    }catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
+                    
                 }
             }
             _doneEvent.Set();

@@ -69,6 +69,7 @@
     <None Include="BloodHound.ps1" />
     <None Include="packages.config" />
     <None Include="PowerView.ps1" />
+    <None Include="PowerView1.ps1" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Exceptions\" />
